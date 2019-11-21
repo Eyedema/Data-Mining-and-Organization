@@ -9,16 +9,13 @@ dataset$Esame_Matematica = as.character(dataset$Esame_Matematica)
 # change scuola_provenienza to match the readme
 dataset$Scuola_provenienza = with(dataset,
                                   ifelse(
-                                    Scuola_provenienza %in% c('AL', 'IA', 'IPC', 'LL', 'XX'),
+                                    Scuola_provenienza %in% c('AL', 'IA', 'IPC', 'LL', 'XX', ''),
                                     'Altro',
                                     Scuola_provenienza
                                   ))
 
-# remove the rows with empty scuola_provenienza
-dataset = with(dataset, dataset[!(is.na(Scuola_provenienza) |
-                                    Scuola_provenienza == ""),])
 
-# change empty esame_matematica rows to show that the exam was not taken
+# change empty esame_matematica rows to show that the exam was not taken and rows where the mark was zero with the mean of other marks
 dataset$Esame_Matematica = with(dataset,
                                 ifelse(Esame_Matematica %in% (''), 'Non superato', Esame_Matematica))
 
@@ -26,16 +23,17 @@ dataset$Esame_Matematica = with(dataset,
                                 ifelse(Esame_Matematica %in% ('MATEMATICA I'), 'EsameMatematica', Esame_Matematica))
 
 
+dataset$Voto_Matematica = with(dataset, ifelse(Voto_Matematica %in% (0), Voto_medio, Voto_Matematica))
 dataset$Voto_Matematica = with(dataset, ifelse(Esame_Matematica %in% ('Non superato'), 0, Voto_Matematica))
 
 
 # first try: remove the crediti_matematica column and see if it has an impact
 dataset$Crediti_Matematica = NULL
 
-# rescale the data
+# rescale the data with the z-score normalization: v' = (v-mean)/std_dev
 rescale_to_01 <- function(dataset, anno) {
   subset_data = subset(dataset, dataset$Coorte == anno)
-  subset_data$Voto_test = scales::rescale(subset_data$Voto_test, to = c(0, 1))
+  subset_data$Voto_test = scale(subset_data$Voto_test)
   return(subset_data)
 }
 
@@ -55,6 +53,8 @@ dataset = plyr::rbind.fill(subset2010,
                            subset2016)
 
 # export the data to csv
+# on weka i'm going to ignore cds, coorte, genere, crediti_totale, scuola_provenienza; i'll use these classes (columns) to do some more analyses to see how
+# the cluster i found correlate to the actual classes that k-means or the algorithm i used created
 write.csv(dataset,
           "./Data/dataset_preprocessed.csv",
           row.names = FALSE)
