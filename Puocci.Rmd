@@ -5,11 +5,16 @@ date: "3/17/2020"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
+library(gridExtra) 
+library(cluster) 
+library(factoextra)
 ```
 
 ## Introduzione
@@ -31,15 +36,15 @@ Per ogni studente abbiamo quindi le seguenti informazioni:
 * Il voto del test d'ingresso obbligatorio per gli studenti iscritto alla scuola di SMFN. 
 * Crediti che corrispondono ad esami con attribuzione di voto
 * Crediti che corrispondono ad esami con o senza attribuzione di voto
-* Il voto medio che lo studente ha ottenuto negli esami da lui superati
+* Il voto medio che lo studente ha ottenuto negli esami da esso superati
 * La scuola di provenienza prima dell'iscrizione all'Università
 * Se lo studente ha superato o meno l'esame di Analisi I o Matematica I al primo anno
 * Il voto conseguito al suddetto esame
-* Il numero di crediti conseguiti con il superamento dello stesso esame
+* Il numero di crediti conseguiti con il superamento del medesimo esame
 
 ## Preprocessing con R
 
-Prima di poter applicare i classici algoritmi di clustering, è necessario preparari i dati per modificarne alcune caratteristiche senza alterare od eliminare nessuna informazione contenuta nel dataset.
+Prima di poter applicare i classici algoritmi di clustering, è necessario preparare i dati per modificarne alcune caratteristiche senza alterare od eliminare alcuna informazione contenuta nel dataset.
 
 La colonna ```Scuola_provenienza``` presenta valori ricondicibili alla seguente legenda:
 
@@ -93,18 +98,169 @@ dataset$Voto_Matematica = with(dataset, ifelse(Esame_Matematica %in% ('Non super
 summary(dataset$Voto_Matematica)
 
 ```
-In questo modo abbiamo mantenuto le informazioni intatte all'interno del nostro dataset, in qualche modo inferendo quelle mancanti, e modificato il significato di un valore dell'attributo ```Voto_Matematica```: adesso il valore zero corrisponde agli studenti che non hanno superato l'esame di matematica.
+In questo modo abbiamo mantenuto le informazioni intatte all'interno del nostro dataset, in qualche modo inferendo quelle mancanti, e modificato il significato di un valore dell'attributo ```Voto_Matematica```: adesso il lo zero corrisponde agli studenti che non hanno superato l'esame di matematica.
 
+```{r, echo=FALSE, fig.align = "center"}
+hist(dataset$Voto_Matematica, xlab = 'Voto', ylab = 'Frequenza', main = 'Valori di Voto_Matematica')
+```
+
+Uno degli attributi più importanti di questo dataset è ```Voto_test``` che indica il voto conseguito da uno studente per il test di ingresso al Corso di Laurea a cui si è iscritto. L'attribuzione del voto è stata modificata negli anni, in particolare: negli anni 2010-2015, il test era costituito da un questionario con 25 domande e ogni risposta corretta era valutata 1, ogni risposta sbagliata o non data era valutata 0; il test risultava superato con un punteggio >=12. Dal 2016, invece, il test  e' costituito da un questionario con 20 domande: ogni risposta corretta viene valutata 1, ogni risposta sbagliata viene valutata -0.25 e ogni risposta non data 0; il test risulta superato con punteggio >=8.
+E' quindi presente, a seconda dell'anno preso in considerazione, un diverso range di valori con attributi diversi che dovrebbero in realtà avere lo stesso significato, come per esempio 8 e 12 per il superamento del test.
+Possiamo dunque applicare una tecnica di standardizzazione che riconduce un qualunque attributo $v$ con media $\mu$ e varianza $\sigma^2$ ad una variabile $v'$ con media $\mu=0$ e varianza $\sigma^2=1$, ossia con distribuzione standard.
+Definendo $\mu_0,\mu_1\dots,\mu_6$ come la media dei valori dell'attributo e $\sigma_0,\sigma_1\dots,\sigma_6$ la sua deviazione standard rispettivamente per gli anni $2010, 2011, \dots, 2016$, il nuovo valore è cacolato come:
+<p style="text-align: center;"> $v'=\frac{v-\mu_i}{\sigma_i}$ </p>
+attraverso la funzione ```scale```.
+```{r}
+summary(dataset$Voto_test)
+sd(dataset$Voto_test)
+```
+```{r, echo=FALSE, fig.align = "center"}
+hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori')
+```
+```{r}
+rescale_to_01 <- function(dataset, anno) {
+  subset_data = subset(dataset, dataset$Coorte == anno)
+  subset_data$Voto_test = scale(subset_data$Voto_test)
+  return(subset_data)
+}
+```
 ```{r, echo=FALSE}
-hist(dataset$Voto_Matematica, xlab = 'Voto', ylab = 'Frequenza', xlim = c(0, 34), main = 'Valori di Voto_Matematica')
+subset2010 = rescale_to_01(dataset, 2010)
+subset2011 = rescale_to_01(dataset, 2011)
+subset2012 = rescale_to_01(dataset, 2012)
+subset2013 = rescale_to_01(dataset, 2013)
+subset2014 = rescale_to_01(dataset, 2014)
+subset2015 = rescale_to_01(dataset, 2015)
+subset2016 = rescale_to_01(dataset, 2016)
+dataset = plyr::rbind.fill(subset2010,
+                           subset2011,
+                           subset2012,
+                           subset2013,
+                           subset2014,
+                           subset2015,
+                           subset2016)
+```
+```{r}
+summary(dataset$Voto_test)
+sd(subset(dataset, dataset$Coorte == 2010)$Voto_test)
+```
+```{r, echo=FALSE, fig.align = "center"}
+hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori dopo la standardizzazione')
 ```
 
-## Including Plots
+Abbiamo in tal modo terminato la parte di preprocessing del nostro dataset. Il risultato ottenuto è quindi il seguente:
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+dataset$Coorte = as.factor(dataset$Coorte)
+summary(dataset)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Studio del dataset
+
+Prima di passare alla fase di applicazione delle tecniche di clustering, possiamo cercare nel dataset delle relazioni fra i dati. La prima relazione interessante da approfondire è sicuramente quella fra il voto medio di ogni studente e sia il suo voto medio durante l'anno, sia il suo voto al test d'ingresso.
+```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=5}
+par(mfrow=c(1,3))
+plot(main='Grafico 1', x = dataset$Voto_Matematica, y = dataset$Voto_medio,xlab='Voto all\'esame di matematica', ylab='Voto medio agli esami', col=rgb(0,0,0,50,maxColorValue=255), pch=16)
+abline(lm(dataset$Voto_medio~dataset$Voto_Matematica), col="red")
+legend(2,30, legend=c("Linear regression line"),
+       col=c("red"), lty=1, cex=0.8)
+plot(main='Grafico 2', x = dataset$Voto_Matematica, y = dataset$Voto_test,xlab='Voto all\'esame di matematica', ylab='Voto al test d\'ingresso (z-score)', col=rgb(0,0,0,50,maxColorValue=255), pch=16)
+abline(lm(Voto_test~Voto_Matematica, data = dataset), col="red")
+legend(2,2, legend=c("Linear regression line"),
+       col=c("red"), lty=1, cex=0.8)
+plot(main='Grafico 3', x = dataset$Voto_medio, y = dataset$Voto_test,xlab='Voto medio agli esami', ylab='Voto al test d\'ingresso (z-score)', col=rgb(0,0,0,50,maxColorValue=255), pch=16)
+abline(lm(Voto_test~Voto_medio, data = dataset), col="red")
+legend(1,2, legend=c("Linear regression line"),
+       col=c("red"), lty=1, cex=0.8)
+```
+La relazione fra le tre variabili prese in considerazione è molto semplice ed è di tipo lineare. Nel primo grafico riusciamo a distinguere tre cluster:
+
+* Studenti che non hanno superato nessun esame, come mostrato dal mark in $(0,0)$
+* Studenti che hanno superato sia l'esame di matematica che altri esami
+* Studenti che hanno superato solo altri esami 
+
+Empiricamente, non sono visibili outlier.
+Nei grafici 2 e 3, invece, possiamo fare distinzione fra due macrogruppi interessanti di studenti:
+
+* Quelli che non hanno superato l'esame di matematica
+* Quelli che non hanno superato nessun esame
+
+La distribuzione del voto di matematica e del voto medio di tutti gli esami è molto più ampia in relazione al voto del test d'ingresso, e sono anche visibili degli outlier.
+
+E' sicuramente interessante cercare una relazione tra la scuola di provenienza ed il genere degli studenti ed il loro voto medio agli esami, a quello di matematica e a quello del testo d'ingresso.
+Filtrando gli studenti con voti $\leq 18$ per quanto riguarda gli esami, il dataset mostra chiaramente che chi proviene da un Liceo Scientifico e da un Liceo Tecnico riesce ad affrontare con più facilità il primo anno dei tre Corsi di Laurea. Per quanto riguarda il test d'ingresso, invece, l'aver frequentato un Liceo Scientifico in qualche modo garantisce un certo vantaggio.
+
+```{r, echo=FALSE, fig.align = "center", fig.height=7, fig.width=8}
+par(mfrow=c(2,3))
+
+plot(x = dataset$Scuola_provenienza, y=dataset$Voto_test, xlab = 'Scuola di provenienza', ylab = 'Voto al test d\'ingresso (z-score)')
+
+with(subset(dataset, Voto_Matematica>=18), plot(x = Scuola_provenienza, y=Voto_Matematica, xlab = 'Scuola di provenienza', ylab = 'Voto all\'esame di matematica', ylim = c(18, 31)))
+
+with(subset(dataset, Voto_Matematica>=18), plot(x = Scuola_provenienza, y=Voto_medio, xlab = 'Scuola di provenienza', ylab = 'Voto medio agli esami', ylim = c(18, 31)))
+
+plot(x = dataset$Genere, y=dataset$Voto_test, xlab = 'Genere', ylab = 'Voto al test d\'ingresso (z-score)')
+
+with(subset(dataset, Voto_Matematica>=18), plot(x = Genere, y=Voto_medio, xlab = 'Genere', ylab = 'Voto medio agli esami', ylim = c(18, 31)))
+
+with(subset(dataset, Voto_Matematica>=18), plot(x = Genere, y=Voto_Matematica, xlab = 'Genere', ylab = 'Voto all\'esame di matematica', ylim = c(18, 31)))
+```
+
+Confrontando il genere degli studenti con i loro risultati accademici si evince che le femmine hanno valutazioni superiori ai maschi. Se consideriamo però il loro genere con il numero di studenti che non hanno superato l'esame di matematica o alcun esame possiamo fare delle considerazioni importanti. Considerando che il numero di iscritti diviso per genere è:
+```{r}
+length(with(subset(dataset, Genere=='F'), Genere))
+length(with(subset(dataset, Genere=='M'), Genere))
+```
+allora i valori ottenuti per l'esame di matematica equivalgono al:
+
+* $\frac{94}{380}\times100\approx24.74\%$ del totale delle femmine
+* $\frac{170}{852}\times100\approx19.95\%$ del totale dei maschi
+
+mentre quelli relativi a tutti gli esami:
+
+* $\frac{61}{380}\times100\approx16.05\%$ del totale delle femmine
+* $\frac{82}{852}\times100\approx9.62\%$ del totale dei maschi
+
+```{r, echo=FALSE, fig.align = "center"}
+par(mfrow=c(1,2))
+counts <- with(subset(dataset, Voto_Matematica<18), table(Genere, Voto_Matematica))
+xx <- barplot(counts, col=c('red','darkblue'), beside = TRUE, names.arg = c('Femmine', 'Maschi'), ylim = c(0,200), ylab = 'Studenti che non hanno superato l\'esame di matematica', xlab='Genere')
+F<-c(with(subset(dataset, Genere=='F' & Voto_Matematica<18),sum(as.numeric(Genere))),with(subset(dataset, Genere=='M' & Voto_Matematica<18),sum(as.numeric(Genere)))/2)
+text(x=xx, y=F+10,labels=F, col = 'black')
+
+counts <- with(subset(dataset, Voto_medio<18), table(Genere, Voto_medio))
+xx <- barplot(counts, col=c('red','darkblue'), beside = TRUE, names.arg = c('Femmine', 'Maschi'), ylim = c(0,200), ylab = 'Studenti che non hanno superato nessun esame', xlab='Genere')
+F<-c(with(subset(dataset, Genere=='F' & Voto_medio<18),sum(as.numeric(Genere))),with(subset(dataset, Genere=='M' & Voto_medio<18),sum(as.numeric(Genere)))/2)
+text(x=xx, y=F+10,labels=F, col = 'black')
+```
+In conclusione, possiamo dire che le ragazze ottengono risultati migliori durante il loro primo anno accademico, ma una grande percentuale di loro non riesce ad affrontare gli esami.
+
+## Clustering
+```{r, fig.align = "center"}
+dataset <- subset( dataset, select = -c(CdS, Coorte, Genere, Crediti_totali, Scuola_provenienza, Esame_Matematica, Crediti_Matematica))
+dataset <- na.omit(dataset)
+dataset <- scale(dataset)
+head(dataset)
+k.max <- 15
+wss <- sapply(1:k.max, 
+              function(k){kmeans(dataset, k, nstart=50,iter.max = 15 )$tot.withinss})
+xx = plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares", xlim = c(0,k.max), ylim = c(0,max(wss)*1.2))
+text(wss~c(1:15), labels = as.integer(wss), pos = 3, cex=0.7)
+
+fviz_nbclust(dataset, kmeans, method='wss')
+
+silhouette_score <- function(k){
+  km <- kmeans(dataset, centers = k, nstart=25)
+  ss <- silhouette(km$cluster, dist(dataset))
+  mean(ss)
+}
+k <- 1:15
+avg_sil <- sapply(k, silhouette_score)
+plot(k, type='b', avg_sil, xlab='Number of clusters', ylab='Average Silhouette Scores', frame=FALSE)
+
+fviz_nbclust(dataset, kmeans, method='silhouette')
+```
+

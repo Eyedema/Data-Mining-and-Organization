@@ -36,7 +36,7 @@
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \hypersetup{
-  pdftitle={DMO},
+  pdftitle={Progetto - Data Mining and Organization},
   pdfauthor={Ubaldo Puocci},
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
@@ -100,39 +100,312 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 
-\title{DMO}
+\title{Progetto - Data Mining and Organization}
 \author{Ubaldo Puocci}
 \date{3/17/2020}
 
 \begin{document}
 \maketitle
 
-\hypertarget{r-markdown}{%
-\subsection{R Markdown}\label{r-markdown}}
+\hypertarget{introduzione}{%
+\subsection{Introduzione}\label{introduzione}}
 
-This is an R Markdown document. Markdown is a simple formatting syntax
-for authoring HTML, PDF, and MS Word documents. For more details on
-using R Markdown see \url{http://rmarkdown.rstudio.com}.
+Il progetto da me scelto comprende il dataset ``Coorti 2010- 2016
+studenti di tre CdS Scuola SMFN - produttivita I anno + esame di
+matematica'' e prevede l'applicazione di algoritmi di clustering per
+analizzare i dati proposti.
 
-When you click the \textbf{Knit} button a document will be generated
-that includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
+Il dataset si presenta in questo modo:
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{summary}\NormalTok{(cars)}
+\NormalTok{dataset =}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"./Data/dataset.csv"}\NormalTok{)}
+\KeywordTok{summary}\NormalTok{(dataset)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00
+##    CdS          Coorte     Genere    Voto_test     Crediti_convoto
+##  CdS1:435   Min.   :2010   F:380   Min.   :-1.00   Min.   : 0.00  
+##  CdS2:458   1st Qu.:2011   M:852   1st Qu.:12.00   1st Qu.:15.00  
+##  CdS3:339   Median :2013           Median :16.62   Median :33.00  
+##             Mean   :2013           Mean   :16.09   Mean   :30.75  
+##             3rd Qu.:2015           3rd Qu.:21.00   3rd Qu.:48.00  
+##             Max.   :2016           Max.   :25.00   Max.   :69.00  
+##                                                                   
+##  Crediti_totali    Voto_medio   Scuola_provenienza        Esame_Matematica
+##  Min.   :  3.0   Min.   : 0.0   LS     :698                       :261    
+##  1st Qu.: 18.0   1st Qu.:22.0   IT     :246        EsameMatematica:970    
+##  Median : 36.0   Median :25.0   LC     : 91        MATEMATICA I   :  1    
+##  Mean   : 34.1   Mean   :22.1   TC     : 67                               
+##  3rd Qu.: 51.0   3rd Qu.:27.0   XX     : 42                               
+##  Max.   :123.0   Max.   :31.0   AL     : 32                               
+##                                 (Other): 56                               
+##  Voto_Matematica Crediti_Matematica
+##  Min.   : 0.00   Min.   : 1.0      
+##  1st Qu.:23.00   1st Qu.:12.0      
+##  Median :25.00   Median :12.0      
+##  Mean   :25.04   Mean   :12.8      
+##  3rd Qu.:28.00   3rd Qu.:15.0      
+##  Max.   :31.00   Max.   :15.0      
+##  NA's   :261     NA's   :261
 \end{verbatim}
+
+Per ogni studente abbiamo quindi le seguenti informazioni:
+
+\begin{itemize}
+\tightlist
+\item
+  Corso di Laurea, con 3 possibili opzioni
+\item
+  Coorte di iscrizione, dal 2010 al 2016 compresi
+\item
+  Il genere
+\item
+  Il voto del test d'ingresso obbligatorio per gli studenti iscritto
+  alla scuola di SMFN.
+\item
+  Crediti che corrispondono ad esami con attribuzione di voto
+\item
+  Crediti che corrispondono ad esami con o senza attribuzione di voto
+\item
+  Il voto medio che lo studente ha ottenuto negli esami da lui superati
+\item
+  La scuola di provenienza prima dell'iscrizione all'Università
+\item
+  Se lo studente ha superato o meno l'esame di Analisi I o Matematica I
+  al primo anno
+\item
+  Il voto conseguito al suddetto esame
+\item
+  Il numero di crediti conseguiti con il superamento dello stesso esame
+\end{itemize}
+
+\hypertarget{preprocessing-con-r}{%
+\subsection{Preprocessing con R}\label{preprocessing-con-r}}
+
+Prima di poter applicare i classici algoritmi di clustering, è
+necessario preparari i dati per modificarne alcune caratteristiche senza
+alterare od eliminare nessuna informazione contenuta nel dataset.
+
+La colonna \texttt{Scuola\_provenienza} presenta valori ricondicibili
+alla seguente legenda:
+
+\begin{itemize}
+\tightlist
+\item
+  LS = Liceo Scientifico
+\item
+  LC = Liceo Classico
+\item
+  IT = Istituto Tecnico Industriale
+\item
+  TC = Istituto Tecnico Commerciale
+\item
+  IP = Istituto Professionale
+\item
+  AL, IA, IPC, LL, XX, o cella vuota = Altro
+\end{itemize}
+
+ed è quindi necessario modificare il dato per far sì che questo sia
+rappresentato nel dataset:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      AL  IA  IP IPC  IT  LC  LL  LS  TC  XX 
+##  23  32   4  12   1 246  91  16 698  67  42
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza =}\StringTok{ }\KeywordTok{as.character}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza)}
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza =}\StringTok{ }\KeywordTok{with}\NormalTok{(dataset,}
+                                  \KeywordTok{ifelse}\NormalTok{(}
+\NormalTok{                                    Scuola_provenienza }\OperatorTok{%in%}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{'AL'}\NormalTok{, }\StringTok{'IA'}\NormalTok{, }\StringTok{'IPC'}\NormalTok{, }\StringTok{'LL'}\NormalTok{, }\StringTok{'XX'}\NormalTok{, }\StringTok{''}\NormalTok{),}
+                                    \StringTok{'Altro'}\NormalTok{,}
+\NormalTok{                                    Scuola_provenienza}
+\NormalTok{                                  ))}
+
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza =}\StringTok{ }\KeywordTok{as.factor}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza)}
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Scuola_provenienza)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Altro    IP    IT    LC    LS    TC 
+##   118    12   246    91   698    67
+\end{verbatim}
+
+La prossima colonna da analizzare è \texttt{Esame\_matematica}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Esame_Matematica)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                 EsameMatematica    MATEMATICA I 
+##             261             970               1
+\end{verbatim}
+
+Questa colonna ci da un'informazione molto importante: se lo studente ha
+superato o meno l'esame di profitto di Analisi I o Matematica I al primo
+anno. Una cella vuota sta a significare che lo studente non ha superato
+l'esame. Dobbiamo quindi modificare il dato per meglio spiegare questo
+fenomeno, ignorando il nome dell'esame poiché non è di nostro interesse
+al momento.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Esame_Matematica =}\StringTok{ }\KeywordTok{as.character}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Esame_Matematica)}
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Esame_Matematica =}\StringTok{ }\KeywordTok{with}\NormalTok{(dataset,}
+                                \KeywordTok{ifelse}\NormalTok{(Esame_Matematica }\OperatorTok{%in%}\StringTok{ }\NormalTok{(}\StringTok{''}\NormalTok{), }\StringTok{'Non superato'}\NormalTok{, Esame_Matematica))}
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Esame_Matematica =}\StringTok{ }\KeywordTok{with}\NormalTok{(dataset,}
+                                \KeywordTok{ifelse}\NormalTok{(Esame_Matematica }\OperatorTok{%in%}\StringTok{ }\NormalTok{(}\StringTok{'MATEMATICA I'}\NormalTok{), }\StringTok{'EsameMatematica'}\NormalTok{, Esame_Matematica))}
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Esame_Matematica =}\StringTok{ }\KeywordTok{as.factor}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Esame_Matematica)}
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Esame_Matematica)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## EsameMatematica    Non superato 
+##             971             261
+\end{verbatim}
+
+Un attributo direttamente legato al precedente è
+\texttt{Voto\_Matematica}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Voto_Matematica)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##    0.00   23.00   25.00   25.04   28.00   31.00     261
+\end{verbatim}
+
+Come mostrato, questo attributo presenta valori pari a zero e valori
+nulli. I valori pari a zero sono interpretabili come informazione non
+presente nel dataset, mentre i valori nulli corrispondono agli studenti
+che non hanno superato l'esame di matematica. L'informazione mancante
+non può essere esclusa, considereremo quindi la media dei voti dello
+studente come valore attendibile per \texttt{Voto\_Matematica}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Voto_Matematica =}\StringTok{ }\KeywordTok{with}\NormalTok{(dataset, }\KeywordTok{ifelse}\NormalTok{(Voto_Matematica }\OperatorTok{%in%}\StringTok{ }\NormalTok{(}\DecValTok{0}\NormalTok{), Voto_medio, Voto_Matematica))}
+\NormalTok{dataset}\OperatorTok{$}\NormalTok{Voto_Matematica =}\StringTok{ }\KeywordTok{with}\NormalTok{(dataset, }\KeywordTok{ifelse}\NormalTok{(Esame_Matematica }\OperatorTok{%in%}\StringTok{ }\NormalTok{(}\StringTok{'Non superato'}\NormalTok{), }\DecValTok{0}\NormalTok{, Voto_Matematica))}
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Voto_Matematica)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    0.00   19.00   24.00   19.85   28.00   31.00
+\end{verbatim}
+
+In questo modo abbiamo mantenuto le informazioni intatte all'interno del
+nostro dataset, in qualche modo inferendo quelle mancanti, e modificato
+il significato di un valore dell'attributo \texttt{Voto\_Matematica}:
+adesso il lo zero corrisponde agli studenti che non hanno superato
+l'esame di matematica.
+
+\includegraphics{Puocci_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+Uno degli attributi più importanti di questo dataset è
+\texttt{Voto\_test} che indica il voto conseguito da uno studente per il
+test di ingresso al Corso di Laurea a cui si è iscritto. L'attribuzione
+del voto è cambiate durante gli anni, in particolare: negli anni
+2010-2015, il test era costituito da un questionario con 25 domande e
+ogni risposta corretta era valutata 1, ogni risposta sbagliata o non
+data era valutata 0; il test risultava superato con un punteggio
+\textgreater=12. Dal 2016, invece, il test e' costituito da un
+questionario con 20 domande: ogni risposta corretta viene valutata 1,
+ogni risposta sbagliata viene valutata -0.25 e ogni risposta non data 0;
+il test risulta superato con punteggio \textgreater=8. E' quindi
+presente, a seconda dell'anno che prendiamo in considerazione, un
+diverso range di valori con attributi diversi che dovrebbero in realtà
+avere lo stesso significato, come per esempio 8 e 12 per il superamento
+del test. Possiamo dunque applicare una tecnica di standardizzazione che
+riconduce un qualunque attributo \(v\) con media \(\mu\) e varianza
+\(\sigma^2\) ad una variabile con \(\mu=0\) e \(\sigma^2=1\), ossia con
+distribuzione standard Definendo \(\mu_0,\mu_1\dots,\mu_6\) come la
+media dei valori dell'attributo e \(\sigma_0,\sigma_1\dots,\sigma_6\) la
+sua deviazione standard rispettivamente per gli anni
+\(2010, 2011, \dots, 2016\), il nuovo valore è cacolato come:
+
+\(v'=\frac{v-\mu_i}{\sigma_i}\)
+
+attraverso la funzione \texttt{scale}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Voto_test)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   -1.00   12.00   16.62   16.09   21.00   25.00
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{sd}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Voto_test)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 5.626392
+\end{verbatim}
+
+\includegraphics{Puocci_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rescale_to_}\DecValTok{01}\NormalTok{ <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(dataset, anno) \{}
+\NormalTok{  subset_data =}\StringTok{ }\KeywordTok{subset}\NormalTok{(dataset, dataset}\OperatorTok{$}\NormalTok{Coorte }\OperatorTok{==}\StringTok{ }\NormalTok{anno)}
+\NormalTok{  subset_data}\OperatorTok{$}\NormalTok{Voto_test =}\StringTok{ }\KeywordTok{scale}\NormalTok{(subset_data}\OperatorTok{$}\NormalTok{Voto_test)}
+  \KeywordTok{return}\NormalTok{(subset_data)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(dataset}\OperatorTok{$}\NormalTok{Voto_test)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        V1          
+##  Min.   :-3.99885  
+##  1st Qu.:-0.74231  
+##  Median : 0.06651  
+##  Mean   : 0.00000  
+##  3rd Qu.: 0.78585  
+##  Max.   : 2.37405
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{sd}\NormalTok{(}\KeywordTok{subset}\NormalTok{(dataset, dataset}\OperatorTok{$}\NormalTok{Coorte }\OperatorTok{==}\StringTok{ }\DecValTok{2010}\NormalTok{)}\OperatorTok{$}\NormalTok{Voto_test)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\includegraphics{Puocci_files/figure-latex/unnamed-chunk-13-1.pdf}
 
 \hypertarget{including-plots}{%
 \subsection{Including Plots}\label{including-plots}}
