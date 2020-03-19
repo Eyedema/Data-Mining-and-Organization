@@ -3,9 +3,9 @@ title: "Progetto - Data Mining and Organization"
 author: "Ubaldo Puocci"
 date: "3/17/2020"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
   word_document: default
 ---
 
@@ -63,7 +63,8 @@ summary(dataset$Scuola_provenienza)
 dataset$Scuola_provenienza = as.character(dataset$Scuola_provenienza)
 dataset$Scuola_provenienza = with(dataset,
                                   ifelse(
-                                    Scuola_provenienza %in% c('AL', 'IA', 'IPC', 'LL', 'XX', ''),
+                                    Scuola_provenienza %in% 
+                                    c('AL', 'IA', 'IPC', 'LL', 'XX', ''),
                                     'Altro',
                                     Scuola_provenienza
                                   ))
@@ -80,9 +81,11 @@ Questa colonna ci da un'informazione molto importante: se lo studente ha superat
 ```{r}
 dataset$Esame_Matematica = as.character(dataset$Esame_Matematica)
 dataset$Esame_Matematica = with(dataset,
-                                ifelse(Esame_Matematica %in% (''), 'Non superato', Esame_Matematica))
+                                ifelse(Esame_Matematica %in% (''), 
+                                'Non superato', Esame_Matematica))
 dataset$Esame_Matematica = with(dataset,
-                                ifelse(Esame_Matematica %in% ('MATEMATICA I'), 'EsameMatematica', Esame_Matematica))
+                                ifelse(Esame_Matematica %in% ('MATEMATICA I'),
+                                'EsameMatematica', Esame_Matematica))
 dataset$Esame_Matematica = as.factor(dataset$Esame_Matematica)
 summary(dataset$Esame_Matematica)
 ```
@@ -93,14 +96,16 @@ summary(dataset$Voto_Matematica)
 Come mostrato, questo attributo presenta valori pari a zero e valori nulli. I valori pari a zero sono interpretabili come informazione non presente nel dataset, mentre i valori nulli corrispondono agli studenti che non hanno superato l'esame di matematica.
 L'informazione mancante non può essere esclusa, considereremo quindi la media dei voti dello studente come valore attendibile per ```Voto_Matematica```.
 ```{r}
-dataset$Voto_Matematica = with(dataset, ifelse(Voto_Matematica %in% (0), Voto_medio, Voto_Matematica))
-dataset$Voto_Matematica = with(dataset, ifelse(Esame_Matematica %in% ('Non superato'), 0, Voto_Matematica))
+dataset$Voto_Matematica = with(dataset, ifelse(Voto_Matematica %in% (0), 
+                                               Voto_medio, Voto_Matematica))
+dataset$Voto_Matematica = with(dataset, ifelse(Esame_Matematica %in% ('Non superato'), 
+                                               0, Voto_Matematica))
 summary(dataset$Voto_Matematica)
 
 ```
 In questo modo abbiamo mantenuto le informazioni intatte all'interno del nostro dataset, in qualche modo inferendo quelle mancanti, e modificato il significato di un valore dell'attributo ```Voto_Matematica```: adesso il lo zero corrisponde agli studenti che non hanno superato l'esame di matematica.
 
-```{r, echo=FALSE, fig.align = "center"}
+```{r, echo=FALSE, fig.align = "center", dpi=400}
 hist(dataset$Voto_Matematica, xlab = 'Voto', ylab = 'Frequenza', main = 'Valori di Voto_Matematica')
 ```
 
@@ -114,7 +119,7 @@ attraverso la funzione ```scale```.
 summary(dataset$Voto_test)
 sd(dataset$Voto_test)
 ```
-```{r, echo=FALSE, fig.align = "center"}
+```{r, echo=FALSE, fig.align = "center", dpi=400}
 hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori')
 ```
 ```{r}
@@ -144,7 +149,7 @@ dataset = plyr::rbind.fill(subset2010,
 summary(dataset$Voto_test)
 sd(subset(dataset, dataset$Coorte == 2010)$Voto_test)
 ```
-```{r, echo=FALSE, fig.align = "center"}
+```{r, echo=FALSE, fig.align = "center", dpi=400}
 hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori dopo la standardizzazione')
 ```
 
@@ -158,7 +163,7 @@ summary(dataset)
 ## Studio del dataset
 
 Prima di passare alla fase di applicazione delle tecniche di clustering, possiamo cercare nel dataset delle relazioni fra i dati. La prima relazione interessante da approfondire è sicuramente quella fra il voto medio di ogni studente e sia il suo voto medio durante l'anno, sia il suo voto al test d'ingresso.
-```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=5}
+```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=5, dpi=400}
 par(mfrow=c(1,3))
 plot(main='Grafico 1', x = dataset$Voto_Matematica, y = dataset$Voto_medio,xlab='Voto all\'esame di matematica', ylab='Voto medio agli esami', col=rgb(0,0,0,50,maxColorValue=255), pch=16)
 abline(lm(dataset$Voto_medio~dataset$Voto_Matematica), col="red")
@@ -190,7 +195,7 @@ La distribuzione del voto di matematica e del voto medio di tutti gli esami è m
 E' sicuramente interessante cercare una relazione tra la scuola di provenienza ed il genere degli studenti ed il loro voto medio agli esami, a quello di matematica e a quello del testo d'ingresso.
 Filtrando gli studenti con voti $\leq 18$ per quanto riguarda gli esami, il dataset mostra chiaramente che chi proviene da un Liceo Scientifico e da un Liceo Tecnico riesce ad affrontare con più facilità il primo anno dei tre Corsi di Laurea. Per quanto riguarda il test d'ingresso, invece, l'aver frequentato un Liceo Scientifico in qualche modo garantisce un certo vantaggio.
 
-```{r, echo=FALSE, fig.align = "center", fig.height=7, fig.width=8}
+```{r, echo=FALSE, fig.align = "center", fig.height=7, fig.width=8, dpi=400}
 par(mfrow=c(2,3))
 
 plot(x = dataset$Scuola_provenienza, y=dataset$Voto_test, xlab = 'Scuola di provenienza', ylab = 'Voto al test d\'ingresso (z-score)')
@@ -207,7 +212,7 @@ with(subset(dataset, Voto_Matematica>=18), plot(x = Genere, y=Voto_Matematica, x
 ```
 
 Confrontando il genere degli studenti con i loro risultati accademici si evince che le femmine hanno valutazioni superiori ai maschi. Se consideriamo però il loro genere con il numero di studenti che non hanno superato l'esame di matematica o alcun esame possiamo fare delle considerazioni importanti. Considerando che il numero di iscritti diviso per genere è:
-```{r}
+```{r, dpi=400}
 length(with(subset(dataset, Genere=='F'), Genere))
 length(with(subset(dataset, Genere=='M'), Genere))
 ```
@@ -221,7 +226,7 @@ mentre quelli relativi a tutti gli esami:
 * $\frac{61}{380}\times100\approx16.05\%$ del totale delle femmine
 * $\frac{82}{852}\times100\approx9.62\%$ del totale dei maschi
 
-```{r, echo=FALSE, fig.align = "center"}
+```{r, echo=FALSE, fig.align = "center", dpi=400}
 par(mfrow=c(1,2))
 counts <- with(subset(dataset, Voto_Matematica<18), table(Genere, Voto_Matematica))
 xx <- barplot(counts, col=c('red','darkblue'), beside = TRUE, names.arg = c('Femmine', 'Maschi'), ylim = c(0,200), ylab = 'Studenti che non hanno superato l\'esame di matematica', xlab='Genere')
@@ -236,31 +241,60 @@ text(x=xx, y=F+10,labels=F, col = 'black')
 In conclusione, possiamo dire che le ragazze ottengono risultati migliori durante il loro primo anno accademico, ma una grande percentuale di loro non riesce ad affrontare gli esami.
 
 ## Clustering
-```{r, fig.align = "center"}
-dataset <- subset( dataset, select = -c(CdS, Coorte, Genere, Crediti_totali, Scuola_provenienza, Esame_Matematica, Crediti_Matematica))
+
+L'algoritmo di clustering che è stato usato per questo dataset è $k\text{-means}$, un algoritmo partizionale basato su prototipi. In questo tipo di algoritmi di clustering non sovrapposti, un cluster è un'insieme di oggetti i quali sono più vicini al prototipo che definisce il cluster che a quelli che definiscono gli altri cluster. Il concetto di vicinanza può variare, come vedremo più avanti.
+
+Nel nostro caso il prototipo sarà un centroide, cioè la media di tutti i punti del custer: questo è possibile poiché vengono considerato solo attributi continui, se avessimo considerato anche attributi categorici allora avremmo dovuto scegliere un medoide, cioè il punto più rappresentativo del cluster.
+
+#### L'algoritmo
+* Seleziona $k$ punti come centroidi iniziali
+* **ripeti**
+  * Forma $k$ cluster assegnando ogni punto al centroide più vicino
+  * Ricalcola il centroide di ogni cluster
+* **finché** I centroidi non cambiano (o vengono modificati in valori entro un certo range definito)
+
+La prima operazione da fare è quindi quella di scegliere $k$, cioè il numero di cluster che vogliamo in output dal nostro algoritmo. Tipicamente l'obbiettivo di un clustering è espresso da una funzione obbiettivo, nel nostro caso la somma dell'errore quadratico medio, o **SSE**. Per calcolarla possiamo considerare l'errore (la distanza) di ogni punto rispetto al suo centroide. 
+
+\begin{center}
+$\text{SSE}=\sum_{i=1}^k\sum_{x_i \in C_k}\textit{dist}(x_i, c_i)^2=\sum_{i=1}^k\sum_{x_i \in C_k}(x_i- c_i)^2$
+\end{center}
+
+Fatte queste premesse, possiamo considerare come migliore un clustering che minimizza l'SSE, poiché mostra dei centroidi che meglio rappresentano i punti del dataset.
+
+La modalità con cui è stato scelto $k$ è stata quella di graficare l'SSE risultante da diverse esecuzioni dell'algoritmo, per $k=1,2,\dots,15$.
+
+
+```{r, fig.align = "center", dpi=400}
+dataset <- subset(dataset, select = -c(CdS, 
+                                       Coorte, 
+                                       Genere, 
+                                       Crediti_totali,
+                                       Scuola_provenienza, 
+                                       Esame_Matematica, 
+                                       Crediti_Matematica))
 dataset <- na.omit(dataset)
-dataset <- scale(dataset)
+dataset[c(2: 4)] <- lapply(dataset[c(2: 4)], function(x) c(scale(x)))
 head(dataset)
 k.max <- 15
-wss <- sapply(1:k.max, 
-              function(k){kmeans(dataset, k, nstart=50,iter.max = 15 )$tot.withinss})
-xx = plot(1:k.max, wss,
-     type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares", xlim = c(0,k.max), ylim = c(0,max(wss)*1.2))
-text(wss~c(1:15), labels = as.integer(wss), pos = 3, cex=0.7)
-
-fviz_nbclust(dataset, kmeans, method='wss')
-
-silhouette_score <- function(k){
-  km <- kmeans(dataset, centers = k, nstart=25)
-  ss <- silhouette(km$cluster, dist(dataset))
-  mean(ss)
+plot_kmeans <- function(dataset, title){
+  wss <- sapply(1:k.max, 
+                function(k){kmeans(dataset, k, nstart=50,iter.max = 15 )$tot.withinss})
+  xx = plot(1:k.max, wss,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Numero di cluster k",
+       ylab="SSE", xlim = c(0,k.max), ylim = c(0,max(wss)*1.2), main = title)
+  text(wss~c(1:15), labels = as.integer(wss), pos = 3, cex=0.7)
 }
-k <- 1:15
-avg_sil <- sapply(k, silhouette_score)
-plot(k, type='b', avg_sil, xlab='Number of clusters', ylab='Average Silhouette Scores', frame=FALSE)
-
-fviz_nbclust(dataset, kmeans, method='silhouette')
 ```
+```{r, echo=FALSE, fig.align = "center", fig.width=10, dpi=400}
+par(mfrow=c(1,2))
+plot_kmeans(dataset, 'SSE al variare di k - tutti i dati')
+plot_kmeans(subset(dataset, select = -c(Voto_test)), 'SSE al variare di k - tutti i dati meno Voto_test')
+```
+Dal grafico si evince chiaramente che per $k\geq4$ abbiamo un SSE che decresce molto più lentamente che per $k<4$. Possiamo quindi dedurre che $k=4$ è con tutta probabilità il valore migliore che possiamo dare in input all'algoritmo $k\text{-means}$ per questo dataset.
 
+```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=10, dpi=400}
+k1 <-kmeans(dataset, 4, nstart=50,iter.max = 15 )
+plot(dataset, col=k1$cluster)
+
+```

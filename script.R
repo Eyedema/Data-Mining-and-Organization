@@ -3,7 +3,7 @@ dataset = read.csv("./Data/dataset.csv")
 
 # modify the type of column otherwise the ifelse returns index position instead of value
 dataset$Scuola_provenienza = as.character(dataset$Scuola_provenienza)
-
+dataset$Coorte = as.character(dataset$Coorte)
 dataset$Esame_Matematica = as.character(dataset$Esame_Matematica)
 
 # change scuola_provenienza to match the readme
@@ -51,7 +51,8 @@ dataset = plyr::rbind.fill(subset2010,
                            subset2014,
                            subset2015,
                            subset2016)
-
+dataset <- na.omit(dataset)
+dataset[c(5, 6, 7, 10)] <- lapply(dataset[c(5, 6, 7, 10)], function(x) c(scale(x)))
 # export the data to csv
 # on weka i'm going to ignore cds, coorte, genere, crediti_totale, scuola_provenienza; i'll use these classes (columns) to do some more analyses to see how
 # the cluster i found correlate to the actual classes that k-means or the algorithm i used created
