@@ -163,6 +163,36 @@ summary(dataset)
 ## Studio del dataset
 
 Prima di passare alla fase di applicazione delle tecniche di clustering, possiamo cercare nel dataset delle relazioni fra i dati. La prima relazione interessante da approfondire è sicuramente quella fra il voto medio di ogni studente e sia il suo voto medio durante l'anno, sia il suo voto al test d'ingresso.
+
+Possiamo calcolare la correlazione di Pearson per le tre variabili. Questo valore $r$ è tale che $r\in[-1,1]$, dove:
+
+* $r=-1$ indica una perfetta correlazione negativa
+* $r=0$ indica che non c'è correlazione fra le variabili, sono indipendenti
+* $r=1$ indica una perfetta correlazione negativa
+
+La bontà di questo valore può essere a sua valta giudicata dal valore del p-value.
+
+Valore della relazione fra il voto medio ed il voto al test d'ingresso:
+```{r, echo=FALSE}
+cat('r: ', 
+cor.test(dataset$Voto_test, dataset$Voto_medio,  method = "pearson")$estimate)
+cat('p-value: ',cor.test(dataset$Voto_test, dataset$Voto_medio,  method = "pearson")$p.value)
+```
+Valore della relazione fra il voto all'esame di matematica ed il voto al test d'ingresso:
+```{r, echo=FALSE}
+cat('r: ', 
+cor.test(dataset$Voto_test, dataset$Voto_Matematica,  method = "pearson")$estimate)
+cat('p-value: ',cor.test(dataset$Voto_test, dataset$Voto_Matematica,  method = "pearson")$p.value)
+```
+Valore della relazione fra il voto medio ed il voto all'esame di matematica:
+```{r, echo=FALSE}
+cat('r: ', 
+cor.test(dataset$Voto_Matematica, dataset$Voto_medio,  method = "pearson")$estimate)
+cat('p-value: ',cor.test(dataset$Voto_Matematica, dataset$Voto_medio,  method = "pearson")$p.value)
+```
+
+Dunque, tra l'ultima coppia di variabili c'è la correlazione più forte, di tipo positivo. In conclusione, tutte e tre le variabili sono correlate positivamente ed i valori di $r$ trovati sono attendibili in quanto abbiamo un p-value molto molto basso.
+
 ```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=5, dpi=400}
 par(mfrow=c(1,3))
 plot(main='Grafico 1', x = dataset$Voto_Matematica, y = dataset$Voto_medio,xlab='Voto all\'esame di matematica', ylab='Voto medio agli esami', col=rgb(0,0,0,50,maxColorValue=255), pch=16)
@@ -178,7 +208,8 @@ abline(lm(Voto_test~Voto_medio, data = dataset), col="red")
 legend(1,2, legend=c("Linear regression line"),
        col=c("red"), lty=1, cex=0.8)
 ```
-La relazione fra le tre variabili prese in considerazione è molto semplice ed è di tipo lineare. Nel primo grafico riusciamo a distinguere tre cluster:
+
+Nel primo grafico riusciamo a distinguere tre cluster:
 
 * Studenti che non hanno superato nessun esame, come mostrato dal mark in $(0,0)$
 * Studenti che hanno superato sia l'esame di matematica che altri esami
@@ -293,8 +324,12 @@ plot_kmeans(subset(dataset, select = -c(Voto_test)), 'SSE al variare di k - tutt
 ```
 Dal grafico si evince chiaramente che per $k\geq4$ abbiamo un SSE che decresce molto più lentamente che per $k<4$. Possiamo quindi dedurre che $k=4$ è con tutta probabilità il valore migliore che possiamo dare in input all'algoritmo $k\text{-means}$ per questo dataset.
 
-```{r, echo=FALSE, fig.align = "center", fig.width=10, fig.height=10, dpi=400}
-k1 <-kmeans(dataset, 4, nstart=50,iter.max = 15 )
-plot(dataset, col=k1$cluster)
-
+```{r, echo=FALSE, fig.align = "center", dpi=400}
+par(mfrow=c(1,3))
+k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
+plot(jitter(dataset$Voto_test,3) ~ jitter(dataset$Voto_medio, 3), col=k1$cluster)
+k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
+plot(jitter(dataset$Voto_Matematica,3) ~ jitter(dataset$Voto_medio, 3), col=k1$cluster)
+k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
+plot(jitter(dataset$Voto_test,3) ~ jitter(dataset$Voto_Matematica, 3), col=k1$cluster)
 ```
