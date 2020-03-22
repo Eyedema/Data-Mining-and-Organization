@@ -105,7 +105,7 @@ summary(dataset$Voto_Matematica)
 ```
 In questo modo abbiamo mantenuto le informazioni intatte all'interno del nostro dataset, in qualche modo inferendo quelle mancanti, e modificato il significato di un valore dell'attributo ```Voto_Matematica```: adesso il lo zero corrisponde agli studenti che non hanno superato l'esame di matematica.
 
-```{r, echo=FALSE, fig.align = "center", dpi=400}
+```{r, echo=FALSE, fig.align = "center", dpi=400, fig.width=4, fig.height=3}
 hist(dataset$Voto_Matematica, xlab = 'Voto', ylab = 'Frequenza', main = 'Valori di Voto_Matematica')
 ```
 
@@ -113,14 +113,13 @@ Uno degli attributi più importanti di questo dataset è ```Voto_test``` che ind
 E' quindi presente, a seconda dell'anno preso in considerazione, un diverso range di valori con attributi diversi che dovrebbero in realtà avere lo stesso significato, come per esempio 8 e 12 per il superamento del test.
 Possiamo dunque applicare una tecnica di standardizzazione che riconduce un qualunque attributo $v$ con media $\mu$ e varianza $\sigma^2$ ad una variabile $v'$ con media $\mu=0$ e varianza $\sigma^2=1$, ossia con distribuzione standard.
 Definendo $\mu_0,\mu_1\dots,\mu_6$ come la media dei valori dell'attributo e $\sigma_0,\sigma_1\dots,\sigma_6$ la sua deviazione standard rispettivamente per gli anni $2010, 2011, \dots, 2016$, il nuovo valore è cacolato come:
-<p style="text-align: center;"> $v'=\frac{v-\mu_i}{\sigma_i}$ </p>
+\begin{center}
+$v'=\frac{v-\mu_i}{\sigma_i}$
+\end{center}
 attraverso la funzione ```scale```.
 ```{r}
 summary(dataset$Voto_test)
 sd(dataset$Voto_test)
-```
-```{r, echo=FALSE, fig.align = "center", dpi=400}
-hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori')
 ```
 ```{r}
 rescale_to_01 <- function(dataset, anno) {
@@ -130,6 +129,7 @@ rescale_to_01 <- function(dataset, anno) {
 }
 ```
 ```{r, echo=FALSE}
+Voto_test_old <- dataset$Voto_test
 subset2010 = rescale_to_01(dataset, 2010)
 subset2011 = rescale_to_01(dataset, 2011)
 subset2012 = rescale_to_01(dataset, 2012)
@@ -149,7 +149,9 @@ dataset = plyr::rbind.fill(subset2010,
 summary(dataset$Voto_test)
 sd(subset(dataset, dataset$Coorte == 2010)$Voto_test)
 ```
-```{r, echo=FALSE, fig.align = "center", dpi=400}
+```{r, echo=FALSE, fig.align = "center", dpi=400, fig.width=10, fig.height=4}
+par(mfrow=c(1,2))
+hist(Voto_test_old, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori')
 hist(dataset$Voto_test, xlab = 'Voto test d\'ingresso', ylab = 'Frequenza', main = 'Istogramma dei valori dopo la standardizzazione')
 ```
 
@@ -324,12 +326,42 @@ plot_kmeans(subset(dataset, select = -c(Voto_test)), 'SSE al variare di k - tutt
 ```
 Dal grafico si evince chiaramente che per $k\geq4$ abbiamo un SSE che decresce molto più lentamente che per $k<4$. Possiamo quindi dedurre che $k=4$ è con tutta probabilità il valore migliore che possiamo dare in input all'algoritmo $k\text{-means}$ per questo dataset.
 
-```{r, echo=FALSE, fig.align = "center", dpi=400}
-par(mfrow=c(1,3))
-k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
-plot(jitter(dataset$Voto_test,3) ~ jitter(dataset$Voto_medio, 3), col=k1$cluster)
-k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
-plot(jitter(dataset$Voto_Matematica,3) ~ jitter(dataset$Voto_medio, 3), col=k1$cluster)
-k1 <-kmeans(dataset,4, nstart=50,iter.max = 15 )
-plot(jitter(dataset$Voto_test,3) ~ jitter(dataset$Voto_Matematica, 3), col=k1$cluster)
+Una volta importato il dataset all'interno di Weka Explorer, è necessario cambiare la colonna Coorte da attributo numerico a nominale, attraverso il filtro \texttt{unsupervised.attribute.NumericToNominal}. Possiamo iniziare ad effettuare il clustering del dataset ignorando gli attributi CdS, Coorte, Genere, Crediti_totali, Scuola_provenienza, Esame_Matematica, e Crediti_Matematica. Questi attributi, anche se ignorati in questa fase, saranno utili per valutare e studiare il clustering ottenuto.
+
+Eseguendo $k\text{-means}$ con $k=4$ otteniamo il seguente output:
 ```
+Within cluster sum of squared errors: 93.23504643885201
+
+Initial starting points (random):
+
+Cluster 0: 1.182148,0.121108,0.341705,0.656018
+Cluster 1: 0.79861,0.92762,0.695173,0.93139
+Cluster 2: -0.0051,0.28241,0.223882,0.564228
+Cluster 3: -0.20489,-0.846707,-0.247409,-1.822323
+Final cluster centroids:
+                               Cluster#
+Attribute          Full Data          0          1          2          3
+                    (1232.0)    (379.0)    (337.0)    (250.0)    (266.0)
+========================================================================
+Voto_test                 -0     0.0041     0.8223    -0.3443    -0.7241
+                   +/-0.9976  +/-0.7918  +/-0.6194  +/-0.9205  +/-0.9735
+
+Crediti_convoto            0     0.2637     1.1981    -0.6725    -1.2615
+                        +/-1  +/-0.3788  +/-0.2963  +/-0.3703  +/-0.5017
+
+Voto_medio                -0     0.3476     0.5962    -0.0047    -1.2462
+                        +/-1  +/-0.2772  +/-0.2432  +/-0.5772  +/-1.4013
+
+Voto_Matematica           -0      0.478     0.7225     0.2261    -1.8089
+                        +/-1  +/-0.3051  +/-0.2652  +/-0.2847   +/-0.155
+```
+Possiamo vedere quali sono i centroidi trovati dall'algoritmo ed il numero di elementi associati ad ognuno dei quattro cluster. A questo punto dobbiamo inserire di nuovo nel dataset gli attributi che abbiamo escluso precedentemente e graficarli per visualizzarli con i cluster trovati.
+
+```{r, out.width = 226, echo=FALSE, dpi=400,fig.show='hold', fig.align="center"}
+knitr::include_graphics("images/2.png")
+knitr::include_graphics("images/3.png")
+```
+Se grafichiamo i cluster ottenuti insieme al voto all'esame di matematica, possiamo chiaramente vedere che il cluster 3 contiene tutti quegli studenti che non hanno superato il suddetto esame, e $2$ outlier chiaramente visibili. Questo è probabilmente poiché su $1232$ attributi, ben $264$ hanno questa esatta classificazione, dandole un certo peso.
+Possiamo inoltre considerare i tre cluster ottenuti come una suddivisione degli studenti in base alla loro "bravura" o successo accademico: nel primo grafico è possibile vedere come gli studenti appartenenti al cluster 2 abbiano ottenuto, generalmente, un punteggio più basso all'esame di matematica rispetto agli studenti presenti nel cluster 1. Nel cluster 0 invece la distribuzione è pressoché uniforme.
+
+Questa ipotesi è confermata anche dai risultati evidenziati nel secondo grafico in cui sono presenti i crediti conseguiti dallo studente ed il suo voto medio agli esami. Quest'ultimo crea una netta divisione tra gli studenti, i quali appartenenti al cluster 1 si confermano i più proficui anche per quanto riguarda il numero di CFU conseguiti. Anche in questo grafico sono visibili degli outlier soprattutto per quanto riguarda il cluster 3: evidentemente, alcuni studenti che non hanno superato l'esame di matematica, hanno però superato altri esami.

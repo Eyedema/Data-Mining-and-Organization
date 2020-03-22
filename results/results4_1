@@ -1,0 +1,70 @@
+=== Run information ===
+
+Scheme:       weka.clusterers.SimpleKMeans -init 0 -max-candidates 100 -periodic-pruning 10000 -min-density 2.0 -t1 -1.25 -t2 -1.0 -V -N 4 -A "weka.core.EuclideanDistance -R first-last" -I 500 -num-slots 1 -S 10
+Relation:     dataset_preprocessed-weka.filters.unsupervised.attribute.NumericToNominal-R2
+Instances:    1232
+Attributes:   10
+              Voto_test
+              Crediti_convoto
+              Voto_medio
+              Voto_Matematica
+Ignored:
+              CdS
+              Coorte
+              Genere
+              Crediti_totali
+              Scuola_provenienza
+              Esame_Matematica
+Test mode:    evaluate on training data
+
+
+=== Clustering model (full training set) ===
+
+
+kMeans
+======
+
+Number of iterations: 26
+Within cluster sum of squared errors: 93.23504643885201
+
+Initial starting points (random):
+
+Cluster 0: 1.182148,0.121108,0.341705,0.656018
+Cluster 1: 0.79861,0.92762,0.695173,0.93139
+Cluster 2: -0.0051,0.28241,0.223882,0.564228
+Cluster 3: -0.20489,-0.846707,-0.247409,-1.822323
+
+Missing values globally replaced with mean/mode
+
+Final cluster centroids:
+                               Cluster#
+Attribute          Full Data          0          1          2          3
+                    (1232.0)    (379.0)    (337.0)    (250.0)    (266.0)
+========================================================================
+Voto_test                 -0     0.0041     0.8223    -0.3443    -0.7241
+                   +/-0.9976  +/-0.7918  +/-0.6194  +/-0.9205  +/-0.9735
+
+Crediti_convoto            0     0.2637     1.1981    -0.6725    -1.2615
+                        +/-1  +/-0.3788  +/-0.2963  +/-0.3703  +/-0.5017
+
+Voto_medio                -0     0.3476     0.5962    -0.0047    -1.2462
+                        +/-1  +/-0.2772  +/-0.2432  +/-0.5772  +/-1.4013
+
+Voto_Matematica           -0      0.478     0.7225     0.2261    -1.8089
+                        +/-1  +/-0.3051  +/-0.2652  +/-0.2847   +/-0.155
+
+
+
+
+
+Time taken to build model (full training data) : 0.04 seconds
+
+=== Model and evaluation on training set ===
+
+Clustered Instances
+
+0       379 ( 31%)
+1       337 ( 27%)
+2       250 ( 20%)
+3       266 ( 22%)
+
