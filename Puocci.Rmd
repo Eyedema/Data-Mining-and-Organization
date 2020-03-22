@@ -15,6 +15,11 @@ library(dplyr)
 library(gridExtra) 
 library(cluster) 
 library(factoextra)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
 ```
 
 ## Introduzione
@@ -275,9 +280,9 @@ In conclusione, possiamo dire che le ragazze ottengono risultati migliori durant
 
 ## Clustering
 
-L'algoritmo di clustering che è stato usato per questo dataset è $k\text{-means}$, un algoritmo partizionale basato su prototipi. In questo tipo di algoritmi di clustering non sovrapposti, un cluster è un'insieme di oggetti i quali sono più vicini al prototipo che definisce il cluster che a quelli che definiscono gli altri cluster. Il concetto di vicinanza può variare, come vedremo più avanti.
+L'algoritmo di clustering che è stato usato per questo dataset è $k\text{-means}$, un algoritmo partizionale basato su prototipi. In questo tipo di algoritmi di clustering non sovrapposti, un cluster è un insieme di oggetti i quali sono più vicini al prototipo che definisce il cluster che a quelli che definiscono gli altri cluster. Il concetto di vicinanza può variare, come osserveremo più avanti.
 
-Nel nostro caso il prototipo sarà un centroide, cioè la media di tutti i punti del custer: questo è possibile poiché vengono considerato solo attributi continui, se avessimo considerato anche attributi categorici allora avremmo dovuto scegliere un medoide, cioè il punto più rappresentativo del cluster.
+Nel nostro caso il prototipo sarà un centroide, cioè la media di tutti i punti del custer: questo è possibile poiché vengono considerato solo attributi continui. Se avessimo considerato anche attributi categorici allora avremmo dovuto scegliere un medoide, cioè il punto più rappresentativo del cluster.
 
 #### L'algoritmo
 * Seleziona $k$ punti come centroidi iniziali
@@ -286,7 +291,7 @@ Nel nostro caso il prototipo sarà un centroide, cioè la media di tutti i punti
   * Ricalcola il centroide di ogni cluster
 * **finché** I centroidi non cambiano (o vengono modificati in valori entro un certo range definito)
 
-La prima operazione da fare è quindi quella di scegliere $k$, cioè il numero di cluster che vogliamo in output dal nostro algoritmo. Tipicamente l'obbiettivo di un clustering è espresso da una funzione obbiettivo, nel nostro caso la somma dell'errore quadratico medio, o **SSE**. Per calcolarla possiamo considerare l'errore (la distanza) di ogni punto rispetto al suo centroide. 
+La prima operazione da fare è quindi quella di scegliere $k$, cioè il numero di cluster che il nsotro algoritmo deve restituire in output. Tipicamente l'obbiettivo di un clustering è espresso da una funzione obbiettivo, nel nostro caso la somma dell'errore quadratico medio, o **SSE**. Per calcolarla possiamo considerare l'errore (la distanza) di ogni punto rispetto al suo centroide. 
 
 \begin{center}
 $\text{SSE}=\sum_{i=1}^k\sum_{x_i \in C_k}\textit{dist}(x_i, c_i)^2=\sum_{i=1}^k\sum_{x_i \in C_k}(x_i- c_i)^2$
@@ -326,9 +331,10 @@ plot_kmeans(subset(dataset, select = -c(Voto_test)), 'SSE al variare di k - tutt
 ```
 Dal grafico si evince chiaramente che per $k\geq4$ abbiamo un SSE che decresce molto più lentamente che per $k<4$. Possiamo quindi dedurre che $k=4$ è con tutta probabilità il valore migliore che possiamo dare in input all'algoritmo $k\text{-means}$ per questo dataset.
 
-Una volta importato il dataset all'interno di Weka Explorer, è necessario cambiare la colonna Coorte da attributo numerico a nominale, attraverso il filtro \texttt{unsupervised.attribute.NumericToNominal}. Possiamo iniziare ad effettuare il clustering del dataset ignorando gli attributi CdS, Coorte, Genere, Crediti_totali, Scuola_provenienza, Esame_Matematica, e Crediti_Matematica. Questi attributi, anche se ignorati in questa fase, saranno utili per valutare e studiare il clustering ottenuto.
+Una volta importato il dataset all'interno di Weka Explorer, è necessario modificare la colonna Coorte da attributo numerico a nominale, attraverso il filtro \texttt{unsupervised.attribute.NumericToNominal}. Possiamo iniziare ad effettuare il clustering del dataset ignorando gli attributi CdS, Coorte, Genere, Crediti_totali, Scuola_provenienza, Esame_Matematica, e Crediti_Matematica. Questi attributi, anche se ignorati in questa fase, saranno utili per valutare e studiare il clustering ottenuto.
 
 Eseguendo $k\text{-means}$ con $k=4$ otteniamo il seguente output:
+\small
 ```
 Within cluster sum of squared errors: 93.23504643885201
 
@@ -355,13 +361,79 @@ Voto_medio                -0     0.3476     0.5962    -0.0047    -1.2462
 Voto_Matematica           -0      0.478     0.7225     0.2261    -1.8089
                         +/-1  +/-0.3051  +/-0.2652  +/-0.2847   +/-0.155
 ```
+\normalsize
 Possiamo vedere quali sono i centroidi trovati dall'algoritmo ed il numero di elementi associati ad ognuno dei quattro cluster. A questo punto dobbiamo inserire di nuovo nel dataset gli attributi che abbiamo escluso precedentemente e graficarli per visualizzarli con i cluster trovati.
 
 ```{r, out.width = 226, echo=FALSE, dpi=400,fig.show='hold', fig.align="center"}
 knitr::include_graphics("images/2.png")
 knitr::include_graphics("images/3.png")
 ```
-Se grafichiamo i cluster ottenuti insieme al voto all'esame di matematica, possiamo chiaramente vedere che il cluster 3 contiene tutti quegli studenti che non hanno superato il suddetto esame, e $2$ outlier chiaramente visibili. Questo è probabilmente poiché su $1232$ attributi, ben $264$ hanno questa esatta classificazione, dandole un certo peso.
+Se grafichiamo i cluster ottenuti insieme al voto all'esame di matematica, possiamo chiaramente vedere che il cluster 3 contiene tutti quegli studenti che non hanno superato il suddetto esame, e $2$ outlier chiaramente visibili. Questo avviene probabilmente poiché su $1232$ attributi, ben $261$ hanno questa esatta classificazione, dandole un certo peso.
 Possiamo inoltre considerare i tre cluster ottenuti come una suddivisione degli studenti in base alla loro "bravura" o successo accademico: nel primo grafico è possibile vedere come gli studenti appartenenti al cluster 2 abbiano ottenuto, generalmente, un punteggio più basso all'esame di matematica rispetto agli studenti presenti nel cluster 1. Nel cluster 0 invece la distribuzione è pressoché uniforme.
 
-Questa ipotesi è confermata anche dai risultati evidenziati nel secondo grafico in cui sono presenti i crediti conseguiti dallo studente ed il suo voto medio agli esami. Quest'ultimo crea una netta divisione tra gli studenti, i quali appartenenti al cluster 1 si confermano i più proficui anche per quanto riguarda il numero di CFU conseguiti. Anche in questo grafico sono visibili degli outlier soprattutto per quanto riguarda il cluster 3: evidentemente, alcuni studenti che non hanno superato l'esame di matematica, hanno però superato altri esami.
+```{r, out.width = 226, echo=FALSE, dpi=400,fig.show='hold', fig.align="center"}
+knitr::include_graphics("images/4.png")
+```
+
+Questa ipotesi è confermata anche dai risultati evidenziati nel secondo grafico ed in quello sovrastante, in cui sono presenti i crediti conseguiti dallo studente ed il suo voto medio agli esami, e la distribuzione del voto al test d'ingresso rispettivamente. Il voto medio crea una netta divisione tra gli studenti, i quali appartenenti al cluster 1 si confermano i più proficui anche per quanto riguarda il numero di CFU conseguiti. Anche in questo grafico sono visibili degli outlier soprattutto per quanto riguarda il cluster 3: evidentemente alcuni studenti, che non hanno superato l'esame di matematica, hanno però superato altri esami.
+
+Considerato che il clustering ottenuto riesce a scindere correttamente fra studenti che hanno superato o meno l'esame di matematica, possiamo provare ad applicarlo all'attributo Esame_matematica, che ci farà quindi da evaluation class.
+\small
+```
+Within cluster sum of squared errors: 93.22385702392656
+
+Initial starting points (random):
+
+Cluster 0: 1.380296,1.411528,0.812996,0.93139
+Cluster 1: 0.730711,0.92762,0.577351,0.747809
+Cluster 2: -1.740318,-1.65322,-2.603863,-1.822323
+Cluster 3: 0.730711,1.411528,0.695173,0.564228
+
+Missing values globally replaced with mean/mode
+
+Final cluster centroids:
+                               Cluster#
+Attribute          Full Data          0          1          2          3
+                    (1232.0)    (319.0)    (298.0)    (267.0)    (348.0)
+========================================================================
+Voto_test                 -0     0.8535    -0.3147    -0.7206       0.04
+                   +/-0.9976  +/-0.5969  +/-0.9072  +/-0.9732  +/-0.7857
+
+Crediti_convoto            0     1.2179    -0.6075     -1.263     0.3728
+                        +/-1   +/-0.283  +/-0.3707  +/-0.5013  +/-0.3418
+
+Voto_medio                -0     0.6062     0.0657    -1.2513     0.3481
+                        +/-1  +/-0.2425  +/-0.5367  +/-1.4012  +/-0.2725
+
+Voto_Matematica           -0       0.73     0.2765    -1.8017     0.4764
+                        +/-1  +/-0.2613  +/-0.3103   +/-0.194  +/-0.3046
+
+Time taken to build model (full training data) : 0 seconds
+
+=== Model and evaluation on training set ===
+
+Clustered Instances
+
+0       319 ( 26%)
+1       298 ( 24%)
+2       267 ( 22%)
+3       348 ( 28%)
+
+Class attribute: Esame_Matematica
+Classes to Clusters:
+
+   0   1   2   3  <-- assigned to cluster
+ 319 298   6 348 | EsameMatematica
+   0   0 261   0 | Non superato
+
+Cluster 0 <-- No class
+Cluster 1 <-- No class
+Cluster 2 <-- Non superato
+Cluster 3 <-- EsameMatematica
+
+Incorrectly clustered instances :	623.0	 50.5682 %
+```
+\normalsize
+L'SSE ottenuto è direttamente comparabile alla configurazione iniziale poiché è la medesima, ma con seed differente. L'algoritmo riesce a raggruppare  correttamente nel cluster 2 i $261$ studenti che non hanno superato l'esame di matematica, mentre associa i restanti studenti ai cluster 0, 1, e 3. Secondo Weka, sono stati mal classificate 623 istanze dell'attributo Esame_matematica, ma unendo i tre cluster otterremmo esattamente tutti gli studenti che hanno superato l'esame.
+
+Ragionando un modo semplicistico, si sarebbe potuto pensare che clusterizzare l'attributo Esame_matematica, che comprende 2 valori, avrebbe portato risultati migliori usando $k\text{-means}$ con $k=2$. Il risultato ottenuto invece è peggiore: è possibile mostrare che l'algoritmo mal classifica 13 istanze del nostro dataset.
